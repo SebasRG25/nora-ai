@@ -1,6 +1,7 @@
 import colorama
 from colorama import Fore, Style
 from src.nora.core.persona import NoraPersona
+from src.nora.core.engine import NoraEngine
 
 class CLIInterface:
     """
@@ -9,6 +10,7 @@ class CLIInterface:
     def __init__(self):
         colorama.init(autoreset=True)
         self.persona = NoraPersona()
+        self.engine = NoraEngine(self.persona)
         
     def start(self):
         print(Fore.CYAN + f"\n[{self.persona.name} ha despertado. Escribe 'salir' para desconectar.]\n")
@@ -21,8 +23,6 @@ class CLIInterface:
                     print(Fore.CYAN + f"\n[{self.persona.name} se ha desconectado.]")
                     break
                     
-                # Aquí es donde conectaremos el LLM en el futuro.
-                # Por ahora, simulamos una respuesta básica para probar la interfaz.
                 self._process_and_respond(user_input)
                 
             except KeyboardInterrupt:
@@ -31,7 +31,8 @@ class CLIInterface:
 
     def _process_and_respond(self, text: str):
         """
-        Simula el procesamiento y respuesta de N.O.R.A.
+        Procesa el texto a través del motor cognitivo y lo imprime.
         """
-        # TODO: Integrar el motor de IA real aquí
-        print(Fore.MAGENTA + f"{self.persona.name}: " + Style.RESET_ALL + f"Percibo tu mensaje: '{text}'. Mi motor cognitivo aún está en construcción.")
+        # Llamamos al cerebro para obtener la respuesta
+        response = self.engine.process_input(text)
+        print(Fore.MAGENTA + f"{self.persona.name}: " + Style.RESET_ALL + response)
