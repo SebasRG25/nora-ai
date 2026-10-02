@@ -33,6 +33,22 @@ class CLIInterface:
         """
         Procesa el texto a través del motor cognitivo y lo imprime.
         """
-        # Llamamos al cerebro para obtener la respuesta
-        response = self.engine.process_input(text)
+        # Caras ASCII simples para la terminal
+        faces = {
+            "neutral":  " ┌─────┐ \n │ • • │ \n │  ─  │ \n └─────┘ ",
+            "happy":    " ┌─────┐ \n │ ^ ^ │ \n │  ‿  │ \n └─────┘ ",
+            "curious":  " ┌─────┐ \n │ ⊙ ⊙ │ \n │  o  │ \n └─────┘ ",
+            "thinking": " ┌─────┐ \n │ - - │ \n │  _  │ \n └─────┘ ",
+            "confused": " ┌─────┐ \n │ ? ? │ \n │  ~  │ \n └─────┘ "
+        }
+        
+        # Llamamos al cerebro para obtener la respuesta y la expresión
+        response, face_expression = self.engine.process_input(text)
+        
+        # Obtener el dibujo (por defecto neutral si elige otra cosa)
+        avatar = faces.get(face_expression, faces["neutral"])
+        
+        # Imprimir avatar en color Cyan
+        print(Fore.CYAN + avatar + Style.RESET_ALL)
+        # Imprimir respuesta
         print(Fore.MAGENTA + f"{self.persona.name}: " + Style.RESET_ALL + response)
