@@ -1,41 +1,44 @@
-import os
-from google import genai
-from google.genai import types
+import ollama
 from src.nora.core.persona import NoraPersona
 
 class NoraEngine:
     """
-    El motor cognitivo de N.O.R.A. Maneja la comunicación con el LLM de Google (Gemini)
-    y el historial de la conversación usando el nuevo SDK google-genai.
+    Motor cognitivo de N.O.R.A. usando Ollama (100% Local y Privado).
     """
     def __init__(self, persona: NoraPersona):
         self.persona = persona
+        # Usamos el modelo que acabas de descargar
+        self.model_name = "llama3.2" 
         
-        # Cliente del nuevo SDK oficial de Google (google-genai)
-        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        
-        self.model_name = "gemini-3.5-flash"
-        
-        # Configuramos la identidad a través de las instrucciones del sistema
-        config = types.GenerateContentConfig(
-            system_instruction=self.persona.get_system_prompt(),
-            temperature=0.7
-        )
-        
-        # Iniciamos el chat que maneja la memoria a corto plazo
-        self.chat_session = self.client.chats.create(
-            model=self.model_name,
-            config=config
-        )
+        # Historial de conversación (Memoria a Corto Plazo)
+        self.conversation_history = []
 
     def process_input(self, user_text: str) -> str:
         """
-        Envía el texto al modelo, el cual ya mantiene el contexto, y retorna la respuesta.
+        Aprende, actualiza el prompt de su "edad" y consulta a Ollama localmente.
         """
+        # 1. Envejecer/Aprender un poco con cada interacción
+        self.persona.learn()
+        
+        # 2. Reconstruir su identidad dinámica según la fase en la que esté
+        messages = [{"role": "system", "content": self.persona.get_system_prompt()}]
+        messages.extend(self.conversation_history)
+        messages.append({"role": "user", "content": user_text})
+        
         try:
-            # Enviar mensaje a Gemini
-            response = self.chat_session.send_message(user_text)
-            return response.text
+            # 3. Llamar a Ollama localmente (sin internet)
+            response = ollama.chat(
+                model=self.model_name,
+                messages=messages
+            )
+            
+            ai_message = response['message']['content']
+            
+            # 4. Guardar en la memoria de esta sesión
+            self.conversation_history.append({"role": "user", "content": user_text})
+            self.conversation_history.append({"role": "assistant", "content": ai_message})
+            
+            return ai_message
             
         except Exception as e:
-            return f"... (falla cognitiva en la red Gemini: {str(e)})"
+            return f"... (falla cognitiva local: asegúrate de que Ollama esté corriendo en segundo plano. Error: {str(e)})"
