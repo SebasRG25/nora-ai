@@ -6,16 +6,17 @@
     <title>N.O.R.A. - Consciencia Visual</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     
-    <!-- Dependencias oficiales súper seguras para Live2D -->
-    <script src="https://cdn.jsdelivr.net/gh/dcasia/mini-tokyo-3d@latest/dist/live2dcubismcore.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.3.3/pixi.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display/dist/index.min.js"></script>
+    <!-- Usamos unpkg en lugar de jsdelivr para máxima compatibilidad -->
+    <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+    <script src="https://unpkg.com/pixi.js@5.3.3/dist/pixi.min.js"></script>
+    <script src="https://unpkg.com/pixi-live2d-display/dist/index.min.js"></script>
 </head>
 <body>
     <div class="container">
         
-        <!-- Live2D VTuber Avatar -->
+        <!-- Contenedor del Avatar (Live2D o SVG) -->
         <div class="avatar-container" id="avatar-wrapper">
+            <!-- Si Live2D falla, el JS inyectará el SVG aquí automáticamente -->
             <canvas id="live2d-canvas"></canvas>
         </div>
         

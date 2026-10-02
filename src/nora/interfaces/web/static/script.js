@@ -2,7 +2,6 @@ const chatHistory = document.getElementById('chat-history');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 
-// ----- 1. GARANTIZAR QUE EL CHAT FUNCIONE PRIMERO -----
 function addMessage(sender, text) {
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message', sender);
@@ -19,7 +18,7 @@ async function sendMessage() {
     userInput.value = '';
     sendBtn.disabled = true;
     
-    triggerFace('thinking'); // Cara de pensar mientras carga
+    triggerFace('thinking'); 
 
     try {
         const response = await fetch('/chat', {
@@ -30,7 +29,6 @@ async function sendMessage() {
         
         const data = await response.json();
         
-        // Poner la animación que NORA eligió
         triggerFace(data.face);
         
         if(data.face !== 'neutral') {
@@ -48,21 +46,33 @@ async function sendMessage() {
     }
 }
 
-sendBtn.addEventListener('click', sendMessage);
-userInput.addEventListener('keypress', (e) => {
+if(sendBtn) sendBtn.addEventListener('click', sendMessage);
+if(userInput) userInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
 });
 
-// ----- 2. CARGAR AVATAR DE FORMA SEGURA (SIN ROMPER EL CHAT) -----
+
+// ----- CARGA DEL AVATAR (CON FALLBACK A SVG SI FALLA EL 3D) -----
 let noraModel = null;
+const avatarWrapper = document.getElementById('avatar-wrapper');
 
 function triggerFace(emotion) {
-    if(!noraModel) return;
-    try {
-        // En un modelo Cubism 4 (como Hiyori), las expresiones pueden llamarse distinto.
-        // Forzaremos movimientos seguros que todos los modelos tienen
-        noraModel.motion('TapBody'); 
-    } catch(e) {}
+    // Si estamos usando el modelo 3D
+    if(noraModel) {
+        try { noraModel.motion('TapBody'); } catch(e) {}
+    } 
+    // Si caímos al fallback SVG
+    else {
+        const fallbackImg = document.getElementById('fallback-avatar');
+        if(fallbackImg) {
+            fallbackImg.className = `avatar ${emotion}`;
+        }
+    }
+}
+
+function enableFallback() {
+    console.warn("Usando avatar de respaldo (SVG) debido a bloqueos en el navegador.");
+    avatarWrapper.innerHTML = `<img id="fallback-avatar" src="/static/avatar.svg" class="avatar neutral" style="width:200px; height:200px; filter: drop-shadow(0 0 15px rgba(88, 166, 255, 0.15)); margin-bottom: 20px;">`;
 }
 
 try {
@@ -75,19 +85,18 @@ try {
             height: 400
         });
 
-        // Usamos a 'Hiyori', un modelo moderno (Cubism 4) oficial súper estable
+        // Hiyori (Cubism 4)
         const modelUrl = 'https://cdn.jsdelivr.net/gh/guansss/pixi-live2d-display/docs/assets/hiyori/hiyori_pro_t10.model3.json';
 
         PIXI.live2d.Live2DModel.from(modelUrl).then(model => {
             noraModel = model;
             app.stage.addChild(model);
             
-            // Escalar y centrar
-            model.scale.set(0.12);
-            model.x = 20;
+            // Asegurarnos de que encaje en el canvas
+            model.scale.set(0.13);
+            model.x = 30;
             model.y = 50;
 
-            // Seguir el ratón
             document.addEventListener('mousemove', (e) => {
                 model.focus(e.clientX, e.clientY);
             });
@@ -96,9 +105,11 @@ try {
                 model.motion('TapBody');
             });
         }).catch(err => {
-            console.warn("No se pudo cargar el avatar, pero el chat seguirá funcionando.", err);
+            enableFallback();
         });
+    } else {
+        enableFallback();
     }
 } catch (error) {
-    console.warn("Fallo al iniciar el motor 2D:", error);
+    enableFallback();
 }
