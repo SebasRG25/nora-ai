@@ -1,32 +1,32 @@
 import ollama
+import re
 from src.nora.core.persona import NoraPersona
+from src.nora.memory.knowledge import NoraMemory
 
 class NoraEngine:
     """
-    Motor cognitivo de N.O.R.A. usando Ollama (100% Local y Privado).
+    Motor cognitivo local de N.O.R.A. usando Ollama con inyección de conocimientos.
     """
     def __init__(self, persona: NoraPersona):
         self.persona = persona
-        # Usamos el modelo que acabas de descargar
+        self.memory = NoraMemory()
         self.model_name = "llama3.2" 
         
-        # Historial de conversación (Memoria a Corto Plazo)
         self.conversation_history = []
 
     def process_input(self, user_text: str) -> str:
-        """
-        Aprende, actualiza el prompt de su "edad" y consulta a Ollama localmente.
-        """
-        # 1. Envejecer/Aprender un poco con cada interacción
-        self.persona.learn()
+        # 1. Obtener todo lo que N.O.R.A sabe hasta ahora
+        knowledge_text = self.memory.get_all_facts_text()
         
-        # 2. Reconstruir su identidad dinámica según la fase en la que esté
-        messages = [{"role": "system", "content": self.persona.get_system_prompt()}]
+        # 2. Inyectar sus conocimientos en el prompt del sistema
+        system_prompt = self.persona.get_system_prompt(knowledge_text)
+        
+        messages = [{"role": "system", "content": system_prompt}]
         messages.extend(self.conversation_history)
         messages.append({"role": "user", "content": user_text})
         
         try:
-            # 3. Llamar a Ollama localmente (sin internet)
+            # 3. Procesar localmente
             response = ollama.chat(
                 model=self.model_name,
                 messages=messages
@@ -34,11 +34,27 @@ class NoraEngine:
             
             ai_message = response['message']['content']
             
-            # 4. Guardar en la memoria de esta sesión
-            self.conversation_history.append({"role": "user", "content": user_text})
-            self.conversation_history.append({"role": "assistant", "content": ai_message})
+            # 4. Extraer nuevos aprendizajes (<LEARN>...</LEARN>)
+            learn_matches = re.findall(r'<LEARN>(.*?)</LEARN>', ai_message, flags=re.IGNORECASE | re.DOTALL)
+            for fact in learn_matches:
+                self.memory.add_fact(fact.strip())
+                
+            # 5. Ocultar la etiqueta de la respuesta visible para el usuario
+            clean_message = re.sub(r'<LEARN>.*?</LEARN>', '', ai_message, flags=re.IGNORECASE | re.DOTALL).strip()
             
-            return ai_message
+            # Si su respuesta era SOLO la etiqueta, mostrar un mensaje de asimilación
+            if not clean_message:
+                clean_message = "*N.O.R.A. ha asimilado el conocimiento en silencio.*"
+            
+            # 6. Actualizar historial de corto plazo
+            self.conversation_history.append({"role": "user", "content": user_text})
+            self.conversation_history.append({"role": "assistant", "content": ai_message}) # Guardamos la versión con etiquetas para su propio contexto
+            
+            # Limitar historial para no saturar el contexto local
+            if len(self.conversation_history) > 10:
+                self.conversation_history = self.conversation_history[-10:]
+            
+            return clean_message
             
         except Exception as e:
-            return f"... (falla cognitiva local: asegúrate de que Ollama esté corriendo en segundo plano. Error: {str(e)})"
+            return f"... (falla cognitiva local: {str(e)})"
