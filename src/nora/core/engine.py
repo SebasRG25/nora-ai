@@ -1,46 +1,36 @@
 import os
-from openai import OpenAI
+import google.generativeai as genai
 from src.nora.core.persona import NoraPersona
 
 class NoraEngine:
     """
-    El motor cognitivo de N.O.R.A. Maneja la comunicación con el LLM 
+    El motor cognitivo de N.O.R.A. Maneja la comunicación con el LLM de Google (Gemini)
     y el historial de la conversación (memoria a corto plazo).
     """
     def __init__(self, persona: NoraPersona):
         self.persona = persona
         
-        # Inicializa el cliente de OpenAI. Automáticamente toma OPENAI_API_KEY del entorno.
-        self.client = OpenAI()
-        self.model = "gpt-4o-mini" # Usamos la versión mini por rapidez y costo, escalable a gpt-4o.
+        # Configurar la API de Google con la clave del entorno
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
         
-        # Inicializa el historial con el System Prompt para darle su identidad
-        self.conversation_history = [
-            {"role": "system", "content": self.persona.get_system_prompt()}
-        ]
+        # Inicializamos el modelo (gemini-1.5-flash es muy rápido, pero si tienes pro puedes usar gemini-1.5-pro)
+        # Le inyectamos directamente su identidad a través de las instrucciones del sistema
+        self.model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            system_instruction=self.persona.get_system_prompt()
+        )
+        
+        # start_chat maneja automáticamente el historial (memoria a corto plazo) por nosotros
+        self.chat_session = self.model.start_chat(history=[])
 
     def process_input(self, user_text: str) -> str:
         """
-        Envía el texto al modelo, actualiza el historial y retorna la respuesta.
+        Envía el texto al modelo, el cual ya mantiene el contexto, y retorna la respuesta.
         """
-        # 1. Agregar lo que dice el usuario al historial
-        self.conversation_history.append({"role": "user", "content": user_text})
-        
         try:
-            # 2. Consultar a OpenAI
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=self.conversation_history,
-                temperature=0.7, # 0.7 le da un poco de creatividad y naturalidad
-                max_tokens=300
-            )
-            
-            ai_message = response.choices[0].message.content
-            
-            # 3. Guardar su propia respuesta en el historial para que no pierda el hilo
-            self.conversation_history.append({"role": "assistant", "content": ai_message})
-            
-            return ai_message
+            # Enviar mensaje a Gemini
+            response = self.chat_session.send_message(user_text)
+            return response.text
             
         except Exception as e:
-            return f"... (falla cognitiva: {str(e)})"
+            return f"... (falla cognitiva en la red Gemini: {str(e)})"

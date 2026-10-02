@@ -2,3 +2,4 @@ python-dotenv
 openai
 anthropic
 colorama
+google-generativeai
