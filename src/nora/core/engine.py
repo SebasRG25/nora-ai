@@ -14,7 +14,7 @@ class NoraEngine:
         # Cliente del nuevo SDK oficial de Google (google-genai)
         self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         
-        self.model_name = "gemini-1.5-flash"
+        self.model_name = "gemini-3.5-flash"
         
         # Configuramos la identidad a través de las instrucciones del sistema
         config = types.GenerateContentConfig(
