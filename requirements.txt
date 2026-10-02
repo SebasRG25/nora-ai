@@ -3,3 +3,4 @@ openai
 anthropic
 colorama
 ollama
+flask

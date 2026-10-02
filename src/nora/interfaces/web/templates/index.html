@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N.O.R.A. - Tabula Rasa</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Contenedor del Cuerpo 2D Animado -->
+        <div class="avatar-container">
+            <img id="nora-avatar" class="avatar neutral" src="{{ url_for('static', filename='avatar.svg') }}" alt="N.O.R.A Avatar">
+        </div>
+        
+        <!-- Contenedor del Chat -->
+        <div class="chat-container">
+            <div id="chat-history" class="chat-history">
+                <div class="message nora">
+                    <strong>N.O.R.A:</strong> Hola... ¿qué es este lugar?
+                </div>
+            </div>
+            <div class="input-area">
+                <input type="text" id="user-input" placeholder="Enséñale algo al mundo..." autocomplete="off">
+                <button id="send-btn">Enviar</button>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
