@@ -1,27 +1,32 @@
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from src.nora.core.persona import NoraPersona
 
 class NoraEngine:
     """
     El motor cognitivo de N.O.R.A. Maneja la comunicación con el LLM de Google (Gemini)
-    y el historial de la conversación (memoria a corto plazo).
+    y el historial de la conversación usando el nuevo SDK google-genai.
     """
     def __init__(self, persona: NoraPersona):
         self.persona = persona
         
-        # Configurar la API de Google con la clave del entorno
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+        # Cliente del nuevo SDK oficial de Google (google-genai)
+        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         
-        # Inicializamos el modelo (gemini-1.5-flash es muy rápido, pero si tienes pro puedes usar gemini-1.5-pro)
-        # Le inyectamos directamente su identidad a través de las instrucciones del sistema
-        self.model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            system_instruction=self.persona.get_system_prompt()
+        self.model_name = "gemini-1.5-flash"
+        
+        # Configuramos la identidad a través de las instrucciones del sistema
+        config = types.GenerateContentConfig(
+            system_instruction=self.persona.get_system_prompt(),
+            temperature=0.7
         )
         
-        # start_chat maneja automáticamente el historial (memoria a corto plazo) por nosotros
-        self.chat_session = self.model.start_chat(history=[])
+        # Iniciamos el chat que maneja la memoria a corto plazo
+        self.chat_session = self.client.chats.create(
+            model=self.model_name,
+            config=config
+        )
 
     def process_input(self, user_text: str) -> str:
         """
